@@ -1,0 +1,116 @@
+# Global configuration - MultiCueGroupedGS
+# Every value is taken from Sections 3.5/3.7/4.1/4.2 and Table 4.5 of the paper (Report (2));
+# comments note the provenance of each setting.
+
+# ---------- Data ----------
+data:
+  source_path: ""              # dataset root (COLMAP output or transforms.json)
+  model_path: "./output"       # output directory
+  images: "images"             # image subdirectory name
+  resolution: 1                # image downscaling factor (1 = native resolution)
+  white_background: false
+  data_device: "cuda"
+  eval: true                   # split cameras into train/test
+  sh_degree: 3
+  masks_dir: "sam_mask"        # associated mask directory (prepare_masks writes raw_sam_mask, associate writes sam_mask)
+
+# ---------- Stage 1: reconstruction (paper Sec. 4.1: 15K iterations) ----------
+stage1:
+  iterations: 15000
+  position_lr_init: 0.00016
+  position_lr_final: 0.0000016
+  position_lr_delay_mult: 0.01
+  position_lr_max_steps: 15000
+  feature_lr: 0.0025
+  opacity_lr: 0.05
+  scaling_lr: 0.005
+  rotation_lr: 0.001
+  percent_dense: 0.01
+  lambda_dssim: 0.2
+  densify_from_iter: 500
+  densify_until_iter: 15000
+  opacity_reset_interval: 3000
+
+# ---------- Budget-controlled densification (paper Sec. 3.7 / 4.2.3) ----------
+densification:
+  enabled: true
+  budget_mode: "multiplier"    # multiplier: budget = multiplier * sfm_points; final_count: an absolute number
+  budget_multiplier: 5.0       # 5x for the full Replica house; 2x for self-captured small scenes (Sec. 4.2.3)
+  densification_interval: 500  # every 500 iterations (one fifth of the default frequency, Sec. 3.7)
+  # Composite score weights (Taming 3DGS default coefficients, adopted by Sec. 3.7)
+  score_weights:
+    view_importance: 50.0
+    edge_importance: 50.0
+    mse_importance: 50.0
+    grad_importance: 25.0
+    dist_importance: 50.0
+    opac_importance: 100.0
+    dept_importance: 5.0
+    radii_importance: 10.0
+    scale_importance: 25.0
+    blend_importance: 50.0
+
+# ---------- Mask generation (paper Sec. 4.1) ----------
+masks:
+  seg_model: "sam"             # sam | entity
+  confidence_threshold: 0.5    # Sec. 4.1: discard masks with score < 0.5
+  points_per_side: 32
+  pred_iou_thresh: 0.86
+  stability_score_thresh: 0.92
+
+# ---------- Mask association (paper Sec. 3.4/3.5.1, Table 4.5) ----------
+association:
+  overlap_threshold: 0.1       # Sec. 3.5.1: IOCUR threshold of 0.1
+  front_percentage: 0.2        # keep the depth-front 20% of Gaussians per mask
+  num_patch: 32                # 32x32 spatial patches
+  use_tracker_init: true       # zero-shot tracker provides initial correspondences (Sec. 3.4); otherwise initialise from the first-frame memory bank
+  # Multi-cue composite score weights (Table 4.5: w = 0.625 / 0.25 / 0.125)
+  w_semantic: 0.625
+  w_depth: 0.25
+  w_edge: 0.125
+  dual_threshold:
+    semantic_min: 0.5          # semantic similarity must pass before merging is allowed
+    depth_affinity_min: 0.5    # depth affinity must pass
+    edge_penalty_max: 0.5      # boundary penalty must stay below this cap
+  enable_voting: true          # cross-view majority voting (Sec. 3.5.1)
+  dinov2_model: "dinov2_vitb14" # torch.hub model name (optional dependency)
+
+# ---------- Stage 2: identity encoding (paper Sec. 3.5.3/3.5.4/4.1) ----------
+stage2:
+  iterations: 10000
+  identity_dim: 16             # identity encoding dimensionality (4.1)
+  embed_dim: 256               # linear head output (4.1: 16 -> 256)
+  lambda_2d: 0.56              # contrastive loss weight (4.1)
+  lambda_3d: 2.0               # 3D regularisation weight (4.1)
+  temperature: 0.1             # contrastive loss temperature tau
+  identity_lr: 0.002           # 2e-3 (4.1)
+  embed_lr: 0.0004             # 4e-4 (4.1)
+  reg3d_interval: 2            # 3D regularisation every 2 iterations (reference-implementation default)
+  reg3d_k: 5                   # k nearest neighbours (4.1)
+  reg3d_sample_size: 1000      # number of sampled Gaussians n (4.1)
+  reg3d_max_points: 300000
+  views_per_step: 2            # views sampled per step for the contrastive loss (source of cross-view positives)
+  pixels_per_view: 2048        # upper bound on pixels/Gaussians sampled per view
+
+# ---------- Editing (paper Sec. 3.6) ----------
+editing:
+  lama_config: ""              # path to the LaMa big-lama config (optional dependency)
+  lama_checkpoint: ""          # path to the LaMa weights
+  inpaint_new_gaussians: 20000 # cap on newly added Gaussians during inpainting
+  inpaint_iterations: 3000     # optimisation iterations for inpainting
+  inpaint_lr_xyz: 0.00016
+  inpaint_lr_features: 0.0025
+  inpaint_lr_opacity: 0.05
+  inpaint_lr_scaling: 0.005
+  inpaint_lr_rotation: 0.001
+
+# ---------- Rendering and logging ----------
+pipeline:
+  compute_cov3D_python: false
+  convert_SHs_python: false
+  debug: false
+
+log:
+  test_iterations: [5000, 10000]
+  save_iterations: [7000, 15000]
+  report_interval: 200

@@ -1,0 +1,16 @@
+torch>=2.0
+torchvision
+numpy
+Pillow
+tqdm
+pyyaml
+plyfile
+scipy
+opencv-python
+# Optional (evaluation / cues / masks / inpainting):
+# lpips                  # LPIPS metric (Sec. 4.2.1)
+# segment-anything       # SAM mask generation (Sec. 3.3/4.1); a SAM checkpoint is also required
+# CLIP @ git+https://github.com/openai/CLIP.git   # CLIP directional similarity (Sec. 4.5.4)
+# facebookresearch/dinov2 via torch.hub           # semantic cue (Sec. 3.5.1)
+# LaMa environment        # 2D inpainting target (Sec. 4.5.2), see lama_runner in editing/inpaint.py
+# diff_gaussian_rasterization + simple_knn       # see the build instructions in the README (not on PyPI)
