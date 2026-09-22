@@ -1,13 +1,5 @@
 # master project
 
-Implemented from the paper "Report (2)" (a 3D segmentation and editing framework built on
-3D Gaussian Splatting). The method = 3DGS reconstruction + multi-cue-guided cross-view mask
-association (a 3D-aware memory bank with a DINOv2/depth/boundary composite score) +
-multi-positive contrastive identity encoding + 3D KL regularisation + retraining-free scene
-editing + budget-controlled densification.
-Implementation ideas follow `Gaga-main` (memory-bank association), `gaussian-grouping-main`
-(identity encoding and editing) and `taming-3dgs-main` (budget densification); all code here
-is an independent re-implementation.
 
 ## Layout
 
