@@ -64,21 +64,3 @@ python edit.py --operation colourise --target 4 --colour 0.9 0.2 0.1
   (Replica panoptic annotations).
 - Outputs: `<model_path>/point_cloud/iteration_*/point_cloud.ply` (carries `identity_0..15`
   channels in the PLY) and `embed_head.pth` (the 16->256 linear head).
-
-## Hyperparameter quick reference (full details in the config.yaml comments)
-
-Identity encoding 16-D; linear head 16->256; lambda_2D = 0.56; lambda_3D = 2.0; encoding lr 2e-3,
-linear head lr 4e-4; 3D regularisation k = 5, n = 1000; SAM confidence threshold 0.5; IOCUR
-threshold 0.1; front percentage 20%; 32 patches; merge score weights 0.625/0.25/0.125;
-Stage 1 15K iters, Stage 2 10K iters; densification every 500 iterations.
-
-## Known limitations
-
-- The rasteriser / simple_knn / SAM / LaMa / DINOv2 / CLIP are external dependencies; when any
-  module is missing the corresponding feature raises a clear error (if DINOv2 is absent the
-  semantic cue gracefully degrades to zero while the depth/boundary cues keep working).
-- Stage 1 densification rebuilds the Adam state after structural changes (the same engineering
-  trade-off as the reference implementations).
-- All code in this repository is an original implementation and contains no source or licence
-  text from the reference repositories; please comply with the licences of those repositories
-  when using their rasteriser submodules.
